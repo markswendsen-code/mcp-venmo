@@ -1,0 +1,74 @@
+{
+  "name": "venmo",
+  "display_name": "Venmo MCP Server",
+  "description": "MCP server that enables AI agents to interact with Venmo — send and request money, check balance, view transaction history, manage friends, and transfer funds to bank.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markswendsen-code/mcp-venmo"
+  },
+  "homepage": "https://striderlabs.ai",
+  "author": "Strider Labs <hello@striderlabs.ai>",
+  "license": "MIT",
+  "categories": ["finance", "payments", "money"],
+  "tools": [
+    {
+      "name": "venmo_login",
+      "description": "Authenticate with Venmo account"
+    },
+    {
+      "name": "venmo_get_balance",
+      "description": "Check current Venmo balance"
+    },
+    {
+      "name": "venmo_send_payment",
+      "description": "Send money to a Venmo user"
+    },
+    {
+      "name": "venmo_request_payment",
+      "description": "Request money from a Venmo user"
+    },
+    {
+      "name": "venmo_get_transactions",
+      "description": "View transaction history"
+    },
+    {
+      "name": "venmo_get_friends",
+      "description": "List Venmo friends"
+    },
+    {
+      "name": "venmo_search_users",
+      "description": "Search for Venmo users"
+    },
+    {
+      "name": "venmo_add_friend",
+      "description": "Add someone as a friend"
+    },
+    {
+      "name": "venmo_accept_request",
+      "description": "Accept a pending payment request"
+    },
+    {
+      "name": "venmo_decline_request",
+      "description": "Decline a pending payment request"
+    },
+    {
+      "name": "venmo_transfer_to_bank",
+      "description": "Transfer Venmo balance to linked bank account"
+    },
+    {
+      "name": "venmo_get_cards",
+      "description": "View linked cards and bank accounts"
+    },
+    {
+      "name": "venmo_get_notifications",
+      "description": "View pending requests and notifications"
+    }
+  ],
+  "installations": {
+    "npm": {
+      "package_name": "@striderlabs/mcp-venmo",
+      "type": "npm"
+    }
+  },
+  "is_official": false
+}
