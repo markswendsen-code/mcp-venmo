@@ -1,6 +1,6 @@
 {
   "name": "@striderlabs/mcp-venmo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server connector for Venmo payments — send/receive money, check balance, manage friends, and view transactions via browser automation",
   "main": "dist/index.js",
   "bin": {

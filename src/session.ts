@@ -102,16 +102,39 @@ export class VenmoSession {
       await this.browser.click('[data-testid="pay-button"], button[type="submit"][class*="pay"]');
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      const transactionId = await this.browser.evaluate(() => {
+      // VERIFY: read a real success/confirmation signal from the page.
+      const verify = await this.browser.evaluate(() => {
         const url = window.location.href;
-        const match = url.match(/\/([a-f0-9-]{36})/);
-        return match ? match[1] : undefined;
+        const idMatch = url.match(/\/([a-f0-9-]{36})/);
+        const bodyText = (document.body.innerText || "").toLowerCase();
+        const successEl = document.querySelector(
+          '[data-testid="payment-success"], [class*="success"], [class*="Success"], [class*="confirmation"]'
+        );
+        const errorEl = document.querySelector(
+          '[role="alert"], [class*="error"], [class*="Error"], [class*="declined"]'
+        );
+        const confirmed =
+          !!successEl ||
+          /payment sent|you paid|sent \$|completed|success/.test(bodyText);
+        return {
+          transactionId: idMatch ? idMatch[1] : undefined,
+          confirmed,
+          errorText: errorEl ? (errorEl.textContent || "").trim() : "",
+        };
       });
+
+      if (!verify.confirmed) {
+        return {
+          success: false,
+          message: `Could not confirm payment of $${amount.toFixed(2)} to ${recipient} went through. ${verify.errorText ? "Page reported: " + verify.errorText + ". " : ""}Please verify in your Venmo account before retrying.`,
+          transactionId: verify.transactionId ?? undefined,
+        };
+      }
 
       return {
         success: true,
-        message: `Successfully sent $${amount.toFixed(2)} to ${recipient} — "${note}"`,
-        transactionId: transactionId ?? undefined,
+        message: `Sent $${amount.toFixed(2)} to ${recipient} — "${note}" (confirmed on page)`,
+        transactionId: verify.transactionId ?? undefined,
       };
     } catch (error) {
       return {
@@ -146,9 +169,30 @@ export class VenmoSession {
       await this.browser.click('[data-testid="request-button"], button[class*="request"]');
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
+      // VERIFY: read a real confirmation signal from the page.
+      const verify = await this.browser.evaluate(() => {
+        const bodyText = (document.body.innerText || "").toLowerCase();
+        const successEl = document.querySelector(
+          '[data-testid="request-success"], [class*="success"], [class*="Success"], [class*="confirmation"]'
+        );
+        const errorEl = document.querySelector(
+          '[role="alert"], [class*="error"], [class*="Error"]'
+        );
+        const confirmed =
+          !!successEl || /request sent|you requested|requested \$|completed|success/.test(bodyText);
+        return { confirmed, errorText: errorEl ? (errorEl.textContent || "").trim() : "" };
+      });
+
+      if (!verify.confirmed) {
+        return {
+          success: false,
+          message: `Could not confirm the request for $${amount.toFixed(2)} from ${recipient} was sent. ${verify.errorText ? "Page reported: " + verify.errorText + ". " : ""}Please verify in your Venmo account.`,
+        };
+      }
+
       return {
         success: true,
-        message: `Successfully requested $${amount.toFixed(2)} from ${recipient} — "${note}"`,
+        message: `Requested $${amount.toFixed(2)} from ${recipient} — "${note}" (confirmed on page)`,
       };
     } catch (error) {
       return {
@@ -295,7 +339,27 @@ export class VenmoSession {
       );
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      return { success: true, message: `Payment request ${requestId} accepted` };
+      // VERIFY: the request should no longer be pending / a success signal shown.
+      const verify = await this.browser.evaluateWithArg((rid: string) => {
+        const bodyText = (document.body.innerText || "").toLowerCase();
+        const stillPending = !!document.querySelector(
+          `[data-id="${rid}"], [data-request-id="${rid}"]`
+        );
+        const successEl = document.querySelector(
+          '[class*="success"], [class*="Success"], [class*="paid"], [class*="completed"]'
+        );
+        const confirmed = !!successEl || /paid|completed|accepted/.test(bodyText) || !stillPending;
+        return { confirmed };
+      }, requestId);
+
+      if (!verify.confirmed) {
+        return {
+          success: false,
+          message: `Could not confirm request ${requestId} was accepted/paid. Please verify in your Venmo account.`,
+        };
+      }
+
+      return { success: true, message: `Payment request ${requestId} accepted and paid (confirmed)` };
     } catch (error) {
       return {
         success: false,
@@ -358,9 +422,31 @@ export class VenmoSession {
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const amountMsg = amount !== undefined ? `$${amount.toFixed(2)}` : "full balance";
+
+      // VERIFY: read a real confirmation signal from the page.
+      const verify = await this.browser.evaluate(() => {
+        const bodyText = (document.body.innerText || "").toLowerCase();
+        const successEl = document.querySelector(
+          '[data-testid="transfer-success"], [class*="success"], [class*="Success"], [class*="confirmation"]'
+        );
+        const errorEl = document.querySelector(
+          '[role="alert"], [class*="error"], [class*="Error"]'
+        );
+        const confirmed =
+          !!successEl || /transfer (initiated|complete|on its way)|money is on the way|success/.test(bodyText);
+        return { confirmed, errorText: errorEl ? (errorEl.textContent || "").trim() : "" };
+      });
+
+      if (!verify.confirmed) {
+        return {
+          success: false,
+          message: `Could not confirm the ${transferSpeed} transfer of ${amountMsg} to bank was initiated. ${verify.errorText ? "Page reported: " + verify.errorText + ". " : ""}Please verify in your Venmo account.`,
+        };
+      }
+
       return {
         success: true,
-        message: `Successfully initiated ${transferSpeed} transfer of ${amountMsg} to bank`,
+        message: `Initiated ${transferSpeed} transfer of ${amountMsg} to bank (confirmed on page)`,
       };
     } catch (error) {
       return {
